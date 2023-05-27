@@ -1,28 +1,47 @@
 import React, { useState } from 'react';
+import AudioRecorder from './AudioRecorder';
+import LiveRecord from './LiveRecord';
 
 const App = () => {
   const [file, setFile] = useState(null);
   const [transcript, setTranscript] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const onFileChange = event => {
     setFile(event.target.files[0]);
   };
 
-  const onFileUpload = async () => {
+  const onFileUpload = () => {
+    if (!file) {
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch('https://testrepo.nextsolutions.in/STTupload', {
-      method: 'POST',
-      body: formData
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'https://testrepo.nextsolutions.in/STTupload');
+
+    xhr.upload.addEventListener('progress', event => {
+      const progress = Math.round((event.loaded / event.total) * 100);
+      setUploadProgress(progress);
     });
 
-    const data = await response.json();
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState === XMLHttpRequest.DONE) {
+        if (xhr.status === 200) {
+          const data = JSON.parse(xhr.responseText);
+          if (data.transcript) {
+            setTranscript(data.transcript);
+          }
+        } else {
+          console.error('Upload failed:', xhr.status);
+        }
+        setUploadProgress(0);
+      }
+    };
 
-    if (data.transcript) {
-      setTranscript(data.transcript);
-      console.log("Upload complete!");
-    }
+    xhr.send(formData);
   };
 
   const getTranscript = async () => {
@@ -39,6 +58,9 @@ const App = () => {
       <h1>Transcription Service</h1>
       <input type="file" onChange={onFileChange} />
       <button onClick={onFileUpload}>Upload!</button>
+      {uploadProgress > 0 && (
+        <progress value={uploadProgress} max="100" />
+      )}
       <button onClick={getTranscript}>Get Transcript!</button>
       {transcript && (
         <div>
@@ -46,6 +68,8 @@ const App = () => {
           <p>{transcript}</p>
         </div>
       )}
+      {/* <LiveRecord/> */}
+      <AudioRecorder/>
     </div>
   );
 };

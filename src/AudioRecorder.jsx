@@ -57,7 +57,7 @@ const AudioRecorder = () => {
             const data = JSON.parse(xhr.responseText);
             if (data.transcript) {
               // Handle the transcript response here
-              console.log("Transcript:", data.transcript);
+              console.log("Transcript:", data);
               setTranscript(data.transcript)
             }
           } else {
